@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Dimension & Weight Calculator</title>
+    <style>
+        :root {
+            --primary: #60a5fa;
+            --primary-dark: #3b82f6;
+            --bg-dark: #0f172a;
+            --bg-darker: #0b1220;
+            --text-light: #e6eef8;
+            --text-muted: #9fb0d4;
+            --card-bg: rgba(15, 23, 42, 0.85);
+            --card-border: rgba(96, 165, 250, 0.2);
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Matrix Background */
+        #matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+        }
+        
+        .matrix-char {
+            position: absolute;
+            color: rgba(16, 185, 129, 0.7);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            animation: matrix-fall linear infinite;
+            text-shadow: 0 0 5px rgba(16, 185, 129, 0.7);
+        }
+        
+        @keyframes matrix-fall {
+            0% {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 24px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(2, 6, 23, 0.8);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+        }
+        
+        h1 {
+            margin: 0 0 8px;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        h2 {
+            font-size: 18px;
+            margin: 20px 0 12px;
+            color: var(--text-light);
+            font-weight: 600;
+            position: relative;
+            display: inline-block;
+        }
+        
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+        }
+        
+        .row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        
+        label {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 6px;
+            display: block;
+        }
+        
+        select, input, textarea, button {
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 14px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-light);
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+        }
+        
+        input[type="number"] {
+            width: 140px;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 140px;
+            resize: vertical;
+            font-family: 'Menlo', 'Courier New', monospace;
+        }
+        
+        .output {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 16px;
+            border-radius: 10px;
+            white-space: pre-wrap;
+            font-family: 'Menlo', monospace;
+            margin-top: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .muted {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .small {
+            font-size: 14px;
+            padding: 10px 16px;
+        }
+        
+        footer {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .weight-info {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(16, 185, 129, 0.1));
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .weight-value {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 18px;
+        }
+        
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .tab-button:hover:not(.active) {
+            color: var(--text-light);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 16px 0;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .items-list, .formula-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .item-row, .formula-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s ease;
+        }
+        
+        .item-row:hover, .formula-row:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        .item-row:last-child, .formula-row:last-child {
+            border-bottom: none;
+        }
+        
+        .item-name, .formula-name {
+            font-weight: 600;
+        }
+        
+        .item-details, .formula-details {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            margin-top: 8px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(96, 165, 250, 0.05);
+        }
+        
+        .delete-btn {
+            background: var(--error);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        
+        .delete-btn:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+        
+        .edit-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        
+        .edit-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            z-index: 1000;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+            color: white;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .success {
+            background: var(--success);
+        }
+        
+        .error {
+            background: var(--error);
+        }
+        
+        .warning {
+            background: var(--warning);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-muted);
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 20px 40px rgba(2, 6, 23, 0.8);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            width: auto;
+            padding: 0;
+        }
+        
+        .close-btn:hover {
+            color: var(--text-light);
+        }
+        
+        .modal-form .row {
+            margin-bottom: 20px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+        
+        .item-actions {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .formula-examples {
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .formula-examples h3 {
+            font-size: 15px;
+            margin: 0 0 10px;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+        
+        .formula-examples code {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+            font-family: 'Menlo', monospace;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        .stats-row {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .stat-box {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.2s ease;
+        }
+        
+        .stat-box:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .formula-expression {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-family: 'Menlo', monospace;
+            margin-top: 4px;
+        }
+        
+        /* Button Styles */
+        button {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(96, 165, 250, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        
+        button.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 6px 12px rgba(255, 255, 255, 0.1);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* Auth Styles */
+        .auth-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 16px;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .auth-card {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .auth-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .row {
+                gap: 12px;
+            }
+            
+            .tab-buttons {
+                flex-wrap: wrap;
+            }
+            
+            .tab-button {
+                flex: 1;
+                min-width: 120px;
+            }
+            
+            .stats-row {
+                flex-direction: column;
+            }
+            
+            .actions {
+                justify-content: center;
+            }
+            
+            .auth-container {
+                flex-direction: column;
+                align-items: flex-end;
+            }
+            
+            .auth-buttons {
+                flex-direction: column;
+            }
+        }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .debug-info {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 12px;
+            font-family: 'Menlo', monospace;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="matrix-bg"></div>
+    
+    <div class="container">
+        <div class="auth-container" id="authContainer">
+            <div id="userInfo" class="user-info" style="display: none;">
+                <div class="user-avatar" id="userAvatar"></div>
+                <span id="userName"></span>
+                <button id="signOutBtn" class="small secondary">Sign Out</button>
+            </div>
+            <div id="signInSection">
+                <button id="signInBtn" class="small">Sign In with Google</button>
+            </div>
+        </div>
+        
+        <div class="card" id="mainApp" style="display: none;">
+            <h1>Advanced Dimension & Weight Calculator</h1>
+            <p class="muted">Calculate dimensions and reference total weight in your formulas. Weight data is stored in Firebase.</p>
+            
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-button active" data-tab="calculator">Calculator</button>
+                    <button class="tab-button" data-tab="items">Manage Items</button>
+                    <button class="tab-button" data-tab="formulas">Saved Formulas</button>
+                </div>
+                
+                <div class="tab-content active" id="calculator-tab">
+                    <div class="weight-info">
+                        <span>Total Weight: <span id="totalWeight" class="weight-value">0</span> units</span>
+                        <span class="muted"> (Use 'weight' variable in formulas)</span>
+                    </div>
+                    
+                    <div class="row">
+                        <div>
+                            <label for="formulaSelect">Select formula</label><br>
+                            <select id="formulaSelect">
+                                <option value="volume">Volume (w * h * d)</option>
+                                <option value="surface">Surface Area (2*(w*h + w*d + h*d))</option>
+                                <option value="diagonal">Space Diagonal (sqrt(w^2 + h^2 + d^2))</option>
+                                <option value="weight-density">Weight Density (weight / volume)</option>
+                                <option value="custom">Custom (edit lines below)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label>Width (w)</label><br>
+                            <input id="w" type="number" step="any" value="1">
+                        </div>
+
+                        <div>
+                            <label>Height (h)</label><br>
+                            <input id="h" type="number" step="any" value="1">
+                        </div>
+
+                        <div>
+                            <label>Depth (d)</label><br>
+                            <input id="d" type="number" step="any" value="1">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div>
+                            <label>Box Thickness (bt)</label><br>
+                            <input id="bt" type="number" step="any" value="0.1">
+                        </div>
+
+                        <div>
+                            <label>Door Thickness (dt)</label><br>
+                            <input id="dt" type="number" step="any" value="0.05">
+                        </div>
+
+                        <div>
+                            <label>Mounting Plate Thickness (mt)</label><br>
+                            <input id="mt" type="number" step="any" value="0.02">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="expr">Multi-line formula (one expression per line). Use variables w, h, d, weight, bt, dt, mt. Use ^ for power (e.g. 2^3). You can reference previous lines by name using =name: expression (example: area = w*h )</label>
+                        <textarea id="expr">w * h * d</textarea>
+                    </div>
+
+                    <div class="formula-examples">
+                        <h3>Formula Examples:</h3>
+                        <code>box = (h*(160+(2*d)+w)*bt+w*(d+160)*bt)/90000</code>
+                        <code>door = ((160+h)*(w+160)*dt)/90000</code>
+                        <code>mounting_plate = ((h-80)*(w-80)*mt)/90000</code>
+                        <code>panel_weight = box+door+mounting_plate</code>
+                    </div>
+
+                    <div class="row" style="margin-top:16px">
+                        <div class="actions">
+                            <button id="calc" class="small">Calculate</button>
+                            <button id="copy" class="small">Copy Result</button>
+                            <button id="reset" class="small secondary">Reset Formula</button>
+                            <button id="saveFormula" class="small">Save Formula</button>
+                            <button id="debugBtn" class="small secondary">Debug Info</button>
+                        </div>
+                    </div>
+
+                    <div class="output" id="output">Results will appear here...</div>
+                    <div id="debugOutput" class="debug-info" style="display: none;"></div>
+                    <footer>Tips: You may write multiple lines. Lines like <code>vol = w*h*d</code> allow naming results. Final value shown for each line.</footer>
+                </div>
+                
+                <div class="tab-content" id="items-tab">
+                    <h2>Add New Item</h2>
+                    <div class="row">
+                        <div>
+                            <label for="name">Product Name</label><br>
+                            <input id="name" placeholder="Product Name">
+                        </div>
+                        <div>
+                            <label for="model">Model Number</label><br>
+                            <input id="model" placeholder="Model Number">
+                        </div>
+                        <div>
+                            <label for="qty">Quantity</label><br>
+                            <input id="qty" placeholder="Quantity" type="number" value="1">
+                        </div>
+                        <div>
+                            <label for="itemWeight">Weight per unit</label><br>
+                            <input id="itemWeight" placeholder="Weight" type="number" step="any" value="1">
+                        </div>
+                    </div>
+                    <div class="actions" style="margin-top:16px">
+                        <button id="addItem" class="small">Add Item</button>
+                        <button id="refreshItems" class="small secondary">Refresh List</button>
+                    </div>
+                    
+                    <h2>Current Items</h2>
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <div class="stat-value" id="itemsCount">0</div>
+                            <div class="stat-label">Total Items</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="totalItemsWeight">0</div>
+                            <div class="stat-label">Total Weight</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="avgWeight">0</div>
+                            <div class="stat-label">Avg Weight</div>
+                        </div>
+                    </div>
+                    <div class="items-list" id="itemsList">
+                        Loading items...
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="formulas-tab">
+                    <h2>Save New Formula</h2>
+                    <div class="row">
+                        <div>
+                            <label for="formulaName">Formula Name</label><br>
+                            <input id="formulaName" placeholder="Formula Name">
+                        </div>
+                        <div>
+                            <label for="formulaDescription">Description</label><br>
+                            <input id="formulaDescription" placeholder="Description">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div style="flex:1">
+                            <label for="formulaExpression">Formula Expression</label><br>
+                            <textarea id="formulaExpression" placeholder="Enter formula expression"></textarea>
+                        </div>
+                    </div>
+                    <div class="actions" style="margin-top:16px">
+                        <button id="addFormula" class="small">Save Formula</button>
+                        <button id="refreshFormulas" class="small secondary">Refresh Formulas</button>
+                    </div>
+                    
+                    <h2>Saved Formulas</h2>
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <div class="stat-value" id="formulasCount">0</div>
+                            <div class="stat-label">Total Formulas</div>
+                        </div>
+                    </div>
+                    <div class="formula-list" id="formulasList">
+                        Loading formulas...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card auth-card" id="welcomeCard">
+            <h1>Welcome to Dimension & Weight Calculator</h1>
+            <p class="muted">Please sign in to start using the calculator and save your data</p>
+            <div class="auth-buttons">
+                <button id="welcomeSignIn" class="small">Sign In with Google</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Item Modal -->
+    <div class="modal" id="editModal" style="display:none">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Edit Item</div>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-form">
+                <div class="row">
+                    <div>
+                        <label for="editName">Product Name</label><br>
+                        <input id="editName" placeholder="Product Name">
+                    </div>
+                    <div>
+                        <label for="editModel">Model Number</label><br>
+                        <input id="editModel" placeholder="Model Number">
+                    </div>
+                </div>
+                <div class="row">
+                    <div>
+                        <label for="editQty">Quantity</label><br>
+                        <input id="editQty" placeholder="Quantity" type="number" value="1">
+                    </div>
+                    <div>
+                        <label for="editWeight">Weight per unit</label><br>
+                        <input id="editWeight" placeholder="Weight" type="number" step="any" value="1">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="cancelEdit" class="small secondary">Cancel</button>
+                    <button id="saveItem" class="small">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Formula Modal -->
+    <div class="modal" id="saveFormulaModal" style="display:none">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Save Formula</div>
+                <button class="close-btn" id="closeSaveModal">&times;</button>
+            </div>
+            <div class="modal-form">
+                <div class="row">
+                    <div>
+                        <label for="saveFormulaName">Formula Name</label><br>
+                        <input id="saveFormulaName" placeholder="Formula Name">
+                    </div>
+                </div>
+                <div class="row">
+                    <div>
+                        <label for="saveFormulaDescription">Description</label><br>
+                        <input id="saveFormulaDescription" placeholder="Description">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="cancelSave" class="small secondary">Cancel</button>
+                    <button id="confirmSave" class="small">Save Formula</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Global error handler
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+            showMessage("❌ Error: " + (e.error?.message || 'Unknown error'), "error");
+        });
+
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            getDocs, 
+            deleteDoc, 
+            doc, 
+            updateDoc, 
+            serverTimestamp,
+            query,
+            where,
+            orderBy,
+            onSnapshot
+        } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+        import { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            signOut, 
+            onAuthStateChanged 
+        } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2pFM88tAID3RXcFIiO-LUClH1kLrpHhs",
+            authDomain: "emp-project-specification-form.firebaseapp.com",
+            projectId: "emp-project-specification-form",
+            storageBucket: "emp-project-specification-form.firebasestorage.app",
+            messagingSenderId: "527422616405",
+            appId: "1:527422616405:web:ec3cf0d12f10a32a89f5dc"
+        };
+
+        // Initialize Firebase
+        let app, db, auth, provider;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            provider = new GoogleAuthProvider();
+            console.log("Firebase initialized successfully");
+        } catch (error) {
+            console.error("Firebase initialization failed:", error);
+            showMessage("❌ Firebase initialization failed: " + error.message, "error");
+        }
+
+        // DOM elements
+        const formulaSelect = document.getElementById('formulaSelect');
+        const expr = document.getElementById('expr');
+        const wIn = document.getElementById('w');
+        const hIn = document.getElementById('h');
+        const dIn = document.getElementById('d');
+        const btIn = document.getElementById('bt');
+        const dtIn = document.getElementById('dt');
+        const mtIn = document.getElementById('mt');
+        const out = document.getElementById('output');
+        const debugOutput = document.getElementById('debugOutput');
+        const calcBtn = document.getElementById('calc');
+        const copyBtn = document.getElementById('copy');
+        const resetBtn = document.getElementById('reset');
+        const saveFormulaBtn = document.getElementById('saveFormula');
+        const debugBtn = document.getElementById('debugBtn');
+        const totalWeightEl = document.getElementById('totalWeight');
+        const itemsList = document.getElementById('itemsList');
+        const addItemBtn = document.getElementById('addItem');
+        const refreshItemsBtn = document.getElementById('refreshItems');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const editModal = document.getElementById('editModal');
+        const closeModalBtn = document.getElementById('closeModal');
+        const cancelEditBtn = document.getElementById('cancelEdit');
+        const saveItemBtn = document.getElementById('saveItem');
+        const editName = document.getElementById('editName');
+        const editModel = document.getElementById('editModel');
+        const editQty = document.getElementById('editQty');
+        const editWeight = document.getElementById('editWeight');
+        const itemsCountEl = document.getElementById('itemsCount');
+        const totalItemsWeightEl = document.getElementById('totalItemsWeight');
+        const avgWeightEl = document.getElementById('avgWeight');
+        const formulasList = document.getElementById('formulasList');
+        const addFormulaBtn = document.getElementById('addFormula');
+        const refreshFormulasBtn = document.getElementById('refreshFormulas');
+        const formulaName = document.getElementById('formulaName');
+        const formulaDescription = document.getElementById('formulaDescription');
+        const formulaExpression = document.getElementById('formulaExpression');
+        const formulasCountEl = document.getElementById('formulasCount');
+        const saveFormulaModal = document.getElementById('saveFormulaModal');
+        const closeSaveModalBtn = document.getElementById('closeSaveModal');
+        const cancelSaveBtn = document.getElementById('cancelSave');
+        const confirmSaveBtn = document.getElementById('confirmSave');
+        const saveFormulaName = document.getElementById('saveFormulaName');
+        const saveFormulaDescription = document.getElementById('saveFormulaDescription');
+        const signInBtn = document.getElementById('signInBtn');
+        const signOutBtn = document.getElementById('signOutBtn');
+        const userInfo = document.getElementById('userInfo');
+        const userName = document.getElementById('userName');
+        const userAvatar = document.getElementById('userAvatar');
+        const signInSection = document.getElementById('signInSection');
+        const mainApp = document.getElementById('mainApp');
+        const welcomeCard = document.getElementById('welcomeCard');
+        const welcomeSignIn = document.getElementById('welcomeSignIn');
+
+        // Global variables
+        let totalWeight = 0;
+        let currentEditId = null;
+        let currentUser = null;
+        let itemsUnsubscribe = null;
+        let formulasUnsubscribe = null;
+
+        // Matrix background effect
+        function createMatrixEffect() {
+            const matrixBg = document.getElementById('matrix-bg');
+            const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+            
+            for (let i = 0; i < 100; i++) {
+                const char = document.createElement('div');
+                char.className = 'matrix-char';
+                char.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
+                char.style.left = `${Math.random() * 100}%`;
+                char.style.animationDuration = `${Math.random() * 10 + 10}s`;
+                char.style.animationDelay = `${Math.random() * 5}s`;
+                matrixBg.appendChild(char);
+            }
+        }
+
+        // Enhanced authentication functions
+        async function signIn() {
+            try {
+                showMessage("🔐 Signing in...", "success");
+                setLoadingState(true);
+                
+                const result = await signInWithPopup(auth, provider);
+                console.log("Signed in successfully:", result.user);
+                
+                // Test Firestore connection after sign-in
+                await testFirestoreConnection();
+                
+            } catch (error) {
+                console.error("Error signing in:", error);
+                let errorMessage = "Error signing in";
+                
+                if (error.code === 'auth/popup-blocked') {
+                    errorMessage = "Popup blocked by browser. Please allow popups for this site.";
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    errorMessage = "This domain is not authorized. Please check Firebase Console settings.";
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = "Network error. Please check your internet connection.";
+                } else {
+                    errorMessage = "Error signing in: " + error.message;
+                }
+                
+                showMessage("❌ " + errorMessage, "error");
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        async function signOutUser() {
+            try {
+                // Unsubscribe from real-time listeners first
+                if (itemsUnsubscribe) itemsUnsubscribe();
+                if (formulasUnsubscribe) formulasUnsubscribe();
+                
+                await signOut(auth);
+                console.log("Signed out successfully");
+                showMessage("✅ Signed out successfully", "success");
+            } catch (error) {
+                console.error("Error signing out:", error);
+                showMessage("❌ Error signing out: " + error.message, "error");
+            }
+        }
+
+        // Test Firestore connection
+        async function testFirestoreConnection() {
+            if (!currentUser) return;
+            
+            try {
+                // Try to write a test document
+                const testRef = await addDoc(collection(db, "testConnection"), {
+                    userId: currentUser.uid,
+                    timestamp: serverTimestamp(),
+                    test: true
+                });
+                
+                // Clean up test document
+                await deleteDoc(testRef);
+                console.log("Firestore connection test: SUCCESS");
+                
+            } catch (error) {
+                console.error("Firestore connection test failed:", error);
+                showMessage("⚠️ Database connection issue: " + error.message, "warning");
+            }
+        }
+
+        function updateUI(user) {
+            currentUser = user;
+            
+            if (user) {
+                // User is signed in
+                userInfo.style.display = 'flex';
+                signInSection.style.display = 'none';
+                mainApp.style.display = 'block';
+                welcomeCard.style.display = 'none';
+                
+                // Update user info
+                userName.textContent = user.displayName || user.email;
+                userAvatar.textContent = user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+                
+                // Enable data-dependent features
+                enableDataFeatures(true);
+                
+                // Load user data with real-time listeners
+                setupRealTimeListeners();
+                
+                showMessage("✅ Welcome, " + (user.displayName || user.email) + "!", "success");
+            } else {
+                // User is signed out
+                userInfo.style.display = 'none';
+                signInSection.style.display = 'block';
+                mainApp.style.display = 'none';
+                welcomeCard.style.display = 'block';
+                
+                // Unsubscribe from real-time listeners
+                if (itemsUnsubscribe) itemsUnsubscribe();
+                if (formulasUnsubscribe) formulasUnsubscribe();
+                
+                // Disable data-dependent features
+                enableDataFeatures(false);
+                
+                // Clear data
+                itemsList.innerHTML = '<div class="empty-state">Please sign in to manage items</div>';
+                formulasList.innerHTML = '<div class="empty-state">Please sign in to manage formulas</div>';
+                totalWeight = 0;
+                totalWeightEl.textContent = '0';
+            }
+        }
+
+        function enableDataFeatures(enabled) {
+            const dataDependentButtons = [
+                addItemBtn, refreshItemsBtn, addFormulaBtn, refreshFormulasBtn, saveFormulaBtn
+            ];
+            
+            dataDependentButtons.forEach(button => {
+                button.disabled = !enabled;
+                button.style.opacity = enabled ? '1' : '0.5';
+                button.style.cursor = enabled ? 'pointer' : 'not-allowed';
+            });
+            
+            const dataDependentInputs = [
+                document.getElementById('name'), document.getElementById('model'), 
+                document.getElementById('qty'), document.getElementById('itemWeight'),
+                formulaName, formulaDescription, formulaExpression
+            ];
+            
+            dataDependentInputs.forEach(input => {
+                input.disabled = !enabled;
+                if (!enabled) {
+                    input.setAttribute('data-placeholder', input.placeholder);
+                    input.placeholder = 'Please sign in to use this feature';
+                } else {
+                    input.placeholder = input.getAttribute('data-placeholder') || '';
+                }
+            });
+        }
+
+        // Setup real-time listeners for data
+        function setupRealTimeListeners() {
+            if (!currentUser) {
+                console.log("No user, skipping real-time listeners");
+                return;
+            }
+
+            console.log("Setting up real-time listeners for user:", currentUser.uid);
+
+            // Items listener with better error handling
+            try {
+                const itemsQuery = query(
+                    collection(db, "items"), 
+                    where("userId", "==", currentUser.uid),
+                    orderBy("timestamp", "desc")
+                );
+                
+                itemsUnsubscribe = onSnapshot(itemsQuery, 
+                    (snapshot) => {
+                        console.log("Items snapshot received:", snapshot.size, "items");
+                        loadItemsData(snapshot);
+                    }, 
+                    (error) => {
+                        console.error("Error in items listener:", error);
+                        console.error("Error code:", error.code);
+                        console.error("Error message:", error.message);
+                        
+                        if (error.code === 'permission-denied') {
+                            showMessage("❌ Permission denied. Please sign in again.", "error");
+                        } else if (error.code === 'unavailable') {
+                            showMessage("⚠️ Service temporarily unavailable", "warning");
+                        } else {
+                            showMessage("❌ Error loading items: " + error.message, "error");
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error("Error setting up items listener:", error);
+            }
+
+            // Formulas listener
+            try {
+                const formulasQuery = query(
+                    collection(db, "formulas"), 
+                    where("userId", "==", currentUser.uid),
+                    orderBy("timestamp", "desc")
+                );
+                
+                formulasUnsubscribe = onSnapshot(formulasQuery, 
+                    (snapshot) => {
+                        console.log("Formulas snapshot received:", snapshot.size, "formulas");
+                        loadFormulasData(snapshot);
+                    }, 
+                    (error) => {
+                        console.error("Error in formulas listener:", error);
+                        if (error.code === 'permission-denied') {
+                            showMessage("❌ Permission denied. Please sign in again.", "error");
+                        } else if (error.code === 'unavailable') {
+                            showMessage("⚠️ Service temporarily unavailable", "warning");
+                        } else {
+                            showMessage("❌ Error loading formulas: " + error.message, "error");
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error("Error setting up formulas listener:", error);
+            }
+        }
+
+        // Connection monitoring
+        function setupConnectionMonitoring() {
+            window.addEventListener('online', () => {
+                showMessage("✅ Connection restored", "success");
+                if (currentUser) setupRealTimeListeners();
+            });
+            
+            window.addEventListener('offline', () => {
+                showMessage("⚠️ You are offline", "warning");
+            });
+        }
+
+        // Tab switching functionality
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                
+                // Update active tab button
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Show active tab content
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            });
+        });
+
+        // Formula templates
+        const templates = {
+            volume: 'w * h * d',
+            surface: '2 * (w*h + w*d + h*d)',
+            diagonal: 'sqrt(w^2 + h^2 + d^2)',
+            'weight-density': 'weight / (w * h * d)'
+        };
+
+        function setTemplate(key){
+            expr.value = templates[key] || expr.value;
+        }
+
+        formulaSelect.addEventListener('change', ()=>{
+            const v = formulaSelect.value;
+            if(v === 'custom') return;
+            setTemplate(v);
+        });
+
+        resetBtn.addEventListener('click', ()=>{
+            setTemplate(formulaSelect.value === 'custom' ? 'w * h * d' : formulaSelect.value);
+            if(formulaSelect.value === 'custom') expr.value = 'w * h * d';
+        });
+
+        // Safe evaluation helper
+        function safeEvaluate(replaced){
+            const transformed = replaced.replace(/\^/g, '**');
+            if(/[^0-9\+\-\*\/=\.\(\)\s\*\/,%\*\*eE]/.test(transformed)){
+                throw new Error('Expression contains disallowed characters after variable replacement. Only numbers and operators are allowed.');
+            }
+            const pctHandled = transformed.replace(/%/g, '/100');
+            return Function('return ('+pctHandled+');')();
+        }
+
+        function formatNumber(x){
+            if(typeof x === 'number' && isFinite(x)){
+                if(Math.abs(x) < 1e-6) return x.toString();
+                const s = x.toPrecision(12);
+                return parseFloat(s).toString();
+            }
+            return String(x);
+        }
+
+        function calculate(){
+            out.textContent = '';
+            const w = parseFloat(wIn.value) || 0;
+            const h = parseFloat(hIn.value) || 0;
+            const d = parseFloat(dIn.value) || 0;
+            const bt = parseFloat(btIn.value) || 0;
+            const dt = parseFloat(dtIn.value) || 0;
+            const mt = parseFloat(mtIn.value) || 0;
+            let lines = expr.value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+            if(lines.length === 0){ out.textContent = 'No formula provided.'; return; }
+
+            const context = { weight: totalWeight };
+            let resultsText = '';
+
+            for(let i=0;i<lines.length;i++){
+                const raw = lines[i];
+                let name = null;
+                let expression = raw;
+                const assignMatch = raw.match(/^([a-zA-Z_]\w*)\s*=\s*(.+)$/);
+                if(assignMatch){ name = assignMatch[1]; expression = assignMatch[2]; }
+
+                let replaced = expression
+                    .replace(/\bw\b/g, '('+w+')')
+                    .replace(/\bh\b/g, '('+h+')')
+                    .replace(/\bd\b/g, '('+d+')')
+                    .replace(/\bweight\b/g, '('+totalWeight+')')
+                    .replace(/\bbt\b/g, '('+bt+')')
+                    .replace(/\bdt\b/g, '('+dt+')')
+                    .replace(/\bmt\b/g, '('+mt+')');
+                
+                replaced = replaced.replace(/\b([a-zA-Z_]\w*)\b/g, (m, p1)=>{
+                    if(p1 === 'w' || p1 === 'h' || p1 === 'd' || p1 === 'weight' || p1 === 'bt' || p1 === 'dt' || p1 === 'mt') return m;
+                    if(context.hasOwnProperty(p1)) return '('+context[p1]+')';
+                    return m;
+                });
+
+                try{
+                    const value = safeEvaluate(replaced);
+                    const lineName = name || ('line'+(i+1));
+                    context[lineName] = value;
+                    resultsText += (name ? (name + ' = ') : ('')) + expression + '  →  ' + formatNumber(value) + '\n';
+                }catch(err){
+                    resultsText += 'Error on line '+(i+1)+': '+raw+'\n  '+err.message+'\n';
+                    break;
+                }
+            }
+
+            out.textContent = resultsText;
+        }
+
+        calcBtn.addEventListener('click', calculate);
+
+        copyBtn.addEventListener('click', ()=>{
+            navigator.clipboard.writeText(out.textContent).then(()=>{
+                showMessage("✅ Copied to clipboard!", "success");
+                copyBtn.textContent = 'Copied';
+                setTimeout(()=>copyBtn.textContent = 'Copy Result',1200);
+            }).catch(()=>{ 
+                showMessage("❌ Failed to copy", "error");
+                copyBtn.textContent = 'Copy failed'; 
+                setTimeout(()=>copyBtn.textContent = 'Copy Result',1200); 
+            });
+        });
+
+        // Debug information
+        function showDebugInfo() {
+            const debugInfo = `
+Firebase Configuration:
+- Project ID: ${firebaseConfig.projectId}
+- Auth Domain: ${firebaseConfig.authDomain}
+- App ID: ${firebaseConfig.appId}
+
+Current State:
+- User: ${currentUser ? currentUser.email : 'Not signed in'}
+- User ID: ${currentUser ? currentUser.uid : 'N/A'}
+- Firestore: ${db ? 'Connected' : 'Not connected'}
+- Auth: ${auth ? 'Initialized' : 'Not initialized'}
+- Total Weight: ${totalWeight}
+
+Firebase Services:
+- App: ${app ? '✓ Initialized' : '✗ Failed'}
+- Firestore: ${db ? '✓ Connected' : '✗ Failed'} 
+- Auth: ${auth ? '✓ Ready' : '✗ Failed'}
+
+Listeners:
+- Items: ${itemsUnsubscribe ? 'Active' : 'Inactive'}
+- Formulas: ${formulasUnsubscribe ? 'Active' : 'Inactive'}
+            `.trim();
+            
+            debugOutput.textContent = debugInfo;
+            debugOutput.style.display = 'block';
+            
+            // Also log to console
+            console.log("Debug Info:", debugInfo);
+        }
+
+        // Firebase functions
+        async function addItem() {
+            if (!currentUser) {
+                showMessage("Please sign in to add items", "error");
+                return;
+            }
+
+            const name = document.getElementById('name').value.trim();
+            const model = document.getElementById('model').value.trim();
+            const qty = Number(document.getElementById('qty').value);
+            const weight = parseFloat(document.getElementById('itemWeight').value) || 0;
+
+            if (!name || !model || !qty) {
+                showMessage("Please fill all required fields!", "error");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, "items"), {
+                    name,
+                    model,
+                    qty,
+                    weight,
+                    totalWeight: weight * qty,
+                    userId: currentUser.uid,
+                    timestamp: serverTimestamp()
+                });
+
+                // Clear the form
+                document.getElementById('name').value = "";
+                document.getElementById('model').value = "";
+                document.getElementById('qty').value = "1";
+                document.getElementById('itemWeight').value = "1";
+                
+                showMessage("✅ Item added successfully!", "success");
+            } catch (error) {
+                console.error("Error adding item:", error);
+                showMessage("❌ Error adding item: " + error.message, "error");
+            }
+        }
+
+        async function deleteItem(id) {
+            if (!confirm("Are you sure you want to delete this item?")) {
+                return;
+            }
+
+            try {
+                await deleteDoc(doc(db, "items", id));
+                showMessage("✅ Item deleted successfully!", "success");
+            } catch (error) {
+                console.error("Error deleting item:", error);
+                showMessage("❌ Error deleting item: " + error.message, "error");
+            }
+        }
+
+        function openEditModal(id, name, model, qty, weight) {
+            currentEditId = id;
+            editName.value = name;
+            editModel.value = model;
+            editQty.value = qty;
+            editWeight.value = weight;
+            editModal.style.display = 'flex';
+        }
+
+        async function saveItem() {
+            if (!currentEditId) return;
+
+            const name = editName.value.trim();
+            const model = editModel.value.trim();
+            const qty = Number(editQty.value);
+            const weight = parseFloat(editWeight.value) || 0;
+
+            if (!name || !model || !qty) {
+                showMessage("Please fill all required fields!", "error");
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, "items", currentEditId), {
+                    name,
+                    model,
+                    qty,
+                    weight,
+                    totalWeight: weight * qty,
+                    timestamp: serverTimestamp()
+                });
+
+                closeModal();
+                showMessage("✅ Item updated successfully!", "success");
+            } catch (error) {
+                console.error("Error updating item:", error);
+                showMessage("❌ Error updating item: " + error.message, "error");
+            }
+        }
+
+        function closeModal() {
+            editModal.style.display = 'none';
+            currentEditId = null;
+        }
+
+        // Function to show temporary message
+        function showMessage(message, type) {
+            const existingMessages = document.querySelectorAll('.message');
+            existingMessages.forEach(msg => msg.remove());
+            
+            const messageEl = document.createElement('div');
+            messageEl.textContent = message;
+            messageEl.className = `message ${type}`;
+            document.body.appendChild(messageEl);
+            
+            setTimeout(() => {
+                if (document.body.contains(messageEl)) {
+                    document.body.removeChild(messageEl);
+                }
+            }, 4000);
+        }
+
+        function setLoadingState(loading) {
+            document.body.classList.toggle('loading', loading);
+        }
+
+        function loadItemsData(snapshot) {
+            let itemsHTML = '';
+            let total = 0;
+            let itemCount = 0;
+            let avgWeight = 0;
+            
+            if (snapshot.empty) {
+                itemsHTML = '<div class="empty-state">No items found. Add your first item above.</div>';
+            } else {
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const itemTotal = data.totalWeight || (data.weight * data.qty);
+                    total += itemTotal;
+                    itemCount++;
+                    
+                    itemsHTML += `
+                        <div class="item-row" data-id="${doc.id}">
+                            <div>
+                                <span class="item-name">${data.name}</span>
+                                <div class="item-details">${data.model} | Qty: ${data.qty} | Weight: ${data.weight}</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span>${itemTotal.toFixed(2)}</span>
+                                <div class="item-actions">
+                                    <button class="edit-btn" data-id="${doc.id}">Edit</button>
+                                    <button class="delete-btn" data-id="${doc.id}">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                avgWeight = itemCount > 0 ? total / itemCount : 0;
+                
+                itemsHTML += `
+                    <div class="item-row total-row">
+                        <div>Total Weight</div>
+                        <div>${total.toFixed(2)}</div>
+                    </div>
+                `;
+            }
+            
+            itemsList.innerHTML = itemsHTML;
+            totalWeight = total;
+            totalWeightEl.textContent = total.toFixed(2);
+            itemsCountEl.textContent = itemCount;
+            totalItemsWeightEl.textContent = total.toFixed(2);
+            avgWeightEl.textContent = avgWeight.toFixed(2);
+            
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    deleteItem(id);
+                });
+            });
+            
+            // Add event listeners to edit buttons
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const itemRow = e.target.closest('.item-row');
+                    const name = itemRow.querySelector('.item-name').textContent;
+                    const details = itemRow.querySelector('.item-details').textContent;
+                    
+                    const modelMatch = details.match(/([^|]+)/);
+                    const qtyMatch = details.match(/Qty:\s*(\d+)/);
+                    const weightMatch = details.match(/Weight:\s*([\d.]+)/);
+                    
+                    const model = modelMatch ? modelMatch[1].trim() : '';
+                    const qty = qtyMatch ? parseInt(qtyMatch[1]) : 1;
+                    const weight = weightMatch ? parseFloat(weightMatch[1]) : 1;
+                    
+                    openEditModal(id, name, model, qty, weight);
+                });
+            });
+        }
+
+        // Formula functions
+        async function addFormula() {
+            if (!currentUser) {
+                showMessage("Please sign in to save formulas", "error");
+                return;
+            }
+
+            const name = formulaName.value.trim();
+            const description = formulaDescription.value.trim();
+            const expression = formulaExpression.value.trim();
+
+            if (!name || !expression) {
+                showMessage("Please fill all required fields!", "error");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, "formulas"), {
+                    name,
+                    description,
+                    expression,
+                    userId: currentUser.uid,
+                    timestamp: serverTimestamp()
+                });
+
+                formulaName.value = "";
+                formulaDescription.value = "";
+                formulaExpression.value = "";
+                
+                showMessage("✅ Formula saved successfully!", "success");
+            } catch (error) {
+                console.error("Error saving formula:", error);
+                showMessage("❌ Error saving formula: " + error.message, "error");
+            }
+        }
+
+        function loadFormulasData(snapshot) {
+            let formulasHTML = '';
+            let formulaCount = 0;
+            
+            if (snapshot.empty) {
+                formulasHTML = '<div class="empty-state">No formulas found. Add your first formula above.</div>';
+            } else {
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    formulaCount++;
+                    
+                    formulasHTML += `
+                        <div class="formula-row" data-id="${doc.id}">
+                            <div>
+                                <span class="formula-name">${data.name}</span>
+                                <div class="formula-details">${data.description || 'No description'}</div>
+                                <div class="formula-expression">${data.expression}</div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="edit-btn" data-id="${doc.id}" data-name="${data.name}" data-expression="${data.expression}">Use</button>
+                                <button class="delete-btn" data-id="${doc.id}">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            formulasList.innerHTML = formulasHTML;
+            formulasCountEl.textContent = formulaCount;
+            
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    deleteFormula(id);
+                });
+            });
+            
+            // Add event listeners to use buttons
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const expression = e.target.getAttribute('data-expression');
+                    expr.value = expression;
+                    
+                    // Switch to calculator tab
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    document.querySelector('[data-tab="calculator"]').classList.add('active');
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    document.getElementById('calculator-tab').classList.add('active');
+                    
+                    showMessage("✅ Formula loaded!", "success");
+                });
+            });
+        }
+
+        async function deleteFormula(id) {
+            if (!confirm("Are you sure you want to delete this formula?")) {
+                return;
+            }
+
+            try {
+                await deleteDoc(doc(db, "formulas", id));
+                showMessage("✅ Formula deleted successfully!", "success");
+            } catch (error) {
+                console.error("Error deleting formula:", error);
+                showMessage("❌ Error deleting formula: " + error.message, "error");
+            }
+        }
+
+        // Save formula from calculator
+        function openSaveFormulaModal() {
+            if (!currentUser) {
+                showMessage("Please sign in to save formulas", "error");
+                return;
+            }
+            
+            saveFormulaName.value = "";
+            saveFormulaDescription.value = "";
+            saveFormulaModal.style.display = 'flex';
+        }
+
+        async function saveCurrentFormula() {
+            const name = saveFormulaName.value.trim();
+            const description = saveFormulaDescription.value.trim();
+            const expression = expr.value.trim();
+
+            if (!name || !expression) {
+                showMessage("Please fill all required fields!", "error");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, "formulas"), {
+                    name,
+                    description,
+                    expression,
+                    userId: currentUser.uid,
+                    timestamp: serverTimestamp()
+                });
+
+                closeSaveModal();
+                showMessage("✅ Formula saved successfully!", "success");
+            } catch (error) {
+                console.error("Error saving formula:", error);
+                showMessage("❌ Error saving formula: " + error.message, "error");
+            }
+        }
+
+        function closeSaveModal() {
+            saveFormulaModal.style.display = 'none';
+        }
+
+        // Event listeners
+        addItemBtn.addEventListener('click', addItem);
+        refreshItemsBtn.addEventListener('click', () => loadItems());
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelEditBtn.addEventListener('click', closeModal);
+        saveItemBtn.addEventListener('click', saveItem);
+        addFormulaBtn.addEventListener('click', addFormula);
+        refreshFormulasBtn.addEventListener('click', () => loadFormulas());
+        saveFormulaBtn.addEventListener('click', openSaveFormulaModal);
+        closeSaveModalBtn.addEventListener('click', closeSaveModal);
+        cancelSaveBtn.addEventListener('click', closeSaveModal);
+        confirmSaveBtn.addEventListener('click', saveCurrentFormula);
+        signInBtn.addEventListener('click', signIn);
+        welcomeSignIn.addEventListener('click', signIn);
+        signOutBtn.addEventListener('click', signOutUser);
+        debugBtn.addEventListener('click', showDebugInfo);
+
+        // Close modal when clicking outside
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) {
+                closeModal();
+            }
+        });
+
+        saveFormulaModal.addEventListener('click', (e) => {
+            if (e.target === saveFormulaModal) {
+                closeSaveModal();
+            }
+        });
+
+        // Initialize
+        createMatrixEffect();
+        setTemplate('volume');
+        setupConnectionMonitoring();
+        
+        // Set up auth state observer
+        if (auth) {
+            onAuthStateChanged(auth, (user) => {
+                console.log("Auth state changed:", user);
+                updateUI(user);
+            }, (error) => {
+                console.error("Auth state change error:", error);
+                showMessage("❌ Authentication error: " + error.message, "error");
+            });
+        }
+
+        // Manual load functions for refresh buttons
+        async function loadItems() {
+            if (!currentUser) return;
+            try {
+                const q = query(
+                    collection(db, "items"), 
+                    where("userId", "==", currentUser.uid),
+                    orderBy("timestamp", "desc")
+                );
+                const snapshot = await getDocs(q);
+                loadItemsData(snapshot);
+                showMessage("✅ Items refreshed", "success");
+            } catch (error) {
+                console.error("Error loading items:", error);
+                showMessage("❌ Error loading items", "error");
+            }
+        }
+
+        async function loadFormulas() {
+            if (!currentUser) return;
+            try {
+                const q = query(
+                    collection(db, "formulas"), 
+                    where("userId", "==", currentUser.uid),
+                    orderBy("timestamp", "desc")
+                );
+                const snapshot = await getDocs(q);
+                loadFormulasData(snapshot);
+                showMessage("✅ Formulas refreshed", "success");
+            } catch (error) {
+                console.error("Error loading formulas:", error);
+                showMessage("❌ Error loading formulas", "error");
+            }
+        }
+
+        // Initial debug info
+        console.log("Application initialized successfully");
+        console.log("Firebase config:", firebaseConfig);
+    </script>
+</body>
+</html>
